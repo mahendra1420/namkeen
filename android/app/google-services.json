@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "9469169799",
+    "project_id": "namkeen-9b99e",
+    "storage_bucket": "namkeen-9b99e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:9469169799:android:19cfc8f8c58ba3efe92822",
+        "android_client_info": {
+          "package_name": "com.namkeen.android.namkeen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdgxMi2eXEh4ihzewtgYgR8bzxDDd64w8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
