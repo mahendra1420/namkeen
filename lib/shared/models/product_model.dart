@@ -9,6 +9,8 @@ class ProductModel {
   final bool isActive;
   final String? description;
   final double minOrderQuantity;
+  final int? discountThreshold;
+  final double? discountedPrice;
 
   ProductModel({
     required this.id,
@@ -21,6 +23,8 @@ class ProductModel {
     this.isActive = true,
     this.description,
     this.minOrderQuantity = 1.0,
+    this.discountThreshold,
+    this.discountedPrice,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,8 @@ class ProductModel {
       isActive: json['isActive'] as bool? ?? true,
       description: json['description'] as String?,
       minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
+      discountThreshold: json['discountThreshold'] as int?,
+      discountedPrice: (json['discountedPrice'] as num?)?.toDouble(),
     );
   }
 
@@ -50,6 +56,8 @@ class ProductModel {
       'isActive': isActive,
       'description': description,
       'minOrderQuantity': minOrderQuantity,
+      'discountThreshold': discountThreshold,
+      'discountedPrice': discountedPrice,
     };
   }
 }

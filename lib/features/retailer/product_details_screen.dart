@@ -6,8 +6,9 @@ import '../../shared/providers/cart_provider.dart';
 
 class ProductDetailsScreen extends ConsumerStatefulWidget {
   final ProductModel product;
+  final String heroTagPrefix;
 
-  const ProductDetailsScreen({super.key, required this.product});
+  const ProductDetailsScreen({super.key, required this.product, this.heroTagPrefix = ''});
 
   @override
   ConsumerState<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -39,17 +40,20 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Hero Image
-            Container(
-              height: 350,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+            Hero(
+              tag: '${widget.heroTagPrefix}product_image_${product.id}',
+              child: Container(
+                height: 350,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                ),
+                child: product.imageUrl != null
+                    ? (product.imageUrl!.startsWith('http')
+                        ? Image.network(product.imageUrl!, fit: BoxFit.cover)
+                        : Image.memory(base64Decode(product.imageUrl!), fit: BoxFit.cover, errorBuilder: (context, e, st) => const Icon(Icons.image, size: 100, color: Colors.grey)))
+                    : const Icon(Icons.image, size: 100, color: Colors.grey),
               ),
-              child: product.imageUrl != null
-                  ? (product.imageUrl!.startsWith('http')
-                      ? Image.network(product.imageUrl!, fit: BoxFit.cover)
-                      : Image.memory(base64Decode(product.imageUrl!), fit: BoxFit.cover, errorBuilder: (context, e, st) => const Icon(Icons.image, size: 100, color: Colors.grey)))
-                  : const Icon(Icons.image, size: 100, color: Colors.grey),
             ),
             
             // Details Section
@@ -172,26 +176,37 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   const SizedBox(width: 16),
                   // Add to Cart Button
                   Expanded(
-                    child: SizedBox(
+                    child: Container(
                       height: 54,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 4,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Theme.of(context).primaryColor, Colors.deepOrangeAccent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        onPressed: () {
-                          ref.read(cartProvider.notifier).addToCart(product, _quantity);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${_quantity.toInt()}x ${product.name} added to cart!'), 
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          );
-                        },
-                        child: Text('ADD TO CART (₹${(product.price * _quantity).toStringAsFixed(0)})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(color: Theme.of(context).primaryColor.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            ref.read(cartProvider.notifier).addToCart(product, _quantity);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${_quantity.toInt()}x ${product.name} added to cart!'), 
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            );
+                          },
+                          child: Center(
+                            child: Text('ADD TO CART (₹${(product.price * _quantity).toStringAsFixed(0)})', style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
                       ),
                     ),
                   ),

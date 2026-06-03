@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../shared/services/cloudinary_service.dart';
 import '../../shared/models/product_model.dart';
 import '../../shared/providers/product_provider.dart';
 import '../../shared/providers/category_provider.dart';
@@ -24,6 +25,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
   final _stockController = TextEditingController();
   final _descController = TextEditingController();
   final _moqController = TextEditingController();
+  final _discountThresholdController = TextEditingController();
+  final _discountedPriceController = TextEditingController();
   
   String _unit = 'kg';
   String? _category;
@@ -53,6 +56,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       _unit = p.unit;
       _descController.text = p.description ?? '';
       _moqController.text = p.minOrderQuantity.toString();
+      _discountThresholdController.text = p.discountThreshold?.toString() ?? '';
+      _discountedPriceController.text = p.discountedPrice?.toString() ?? '';
     }
   }
 
@@ -70,9 +75,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       String? uploadedImageUrl = isEditing ? widget.productToEdit!.imageUrl : null;
 
       if (_imageFile != null) {
-        // Convert image to Base64 string to save directly in Firestore
-        final bytes = await _imageFile!.readAsBytes();
-        uploadedImageUrl = base64Encode(bytes);
+        // Upload image to Cloudinary
+        uploadedImageUrl = await CloudinaryService.uploadImage(_imageFile!);
       }
 
       final product = ProductModel(
@@ -86,6 +90,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
         imageUrl: uploadedImageUrl,
         description: _descController.text.trim(),
         minOrderQuantity: double.tryParse(_moqController.text.trim()) ?? 1.0,
+        discountThreshold: int.tryParse(_discountThresholdController.text.trim()),
+        discountedPrice: double.tryParse(_discountedPriceController.text.trim()),
       );
 
       if (isEditing) {
@@ -158,6 +164,30 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const Text('Volume Discounts (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _discountThresholdController,
+                            decoration: const InputDecoration(labelText: 'Min Qty for Discount (e.g. 50)'),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _discountedPriceController,
+                            decoration: const InputDecoration(labelText: 'Discounted Price (e.g. 90)'),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: _unit,

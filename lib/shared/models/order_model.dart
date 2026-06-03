@@ -1,6 +1,6 @@
 import 'product_model.dart';
 
-enum OrderStatus { pending, completed }
+enum OrderStatus { pending, partially_fulfilled, completed }
 
 class OrderItem {
   final ProductModel product;
@@ -22,7 +22,14 @@ class OrderItem {
     };
   }
 
-  double get total => product.price * quantity;
+  double get total {
+    if (product.discountThreshold != null && 
+        product.discountedPrice != null && 
+        quantity >= product.discountThreshold!) {
+      return product.discountedPrice! * quantity;
+    }
+    return product.price * quantity;
+  }
 }
 
 class OrderModel {

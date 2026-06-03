@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../shared/providers/category_provider.dart';
 import '../../shared/providers/product_provider.dart';
 import '../../shared/widgets/product_card.dart';
@@ -141,6 +142,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         child: ChoiceChip(
                           label: const Text('All Products'),
                           selected: isSelected,
+                          selectedColor: const Color(0xFF2E3192),
+                          labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
                           onSelected: (selected) {
                             if (selected) setState(() => _selectedCategoryName = null);
                           },
@@ -154,6 +157,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                       child: ChoiceChip(
                         label: Text(category.name),
                         selected: isSelected,
+                        selectedColor: const Color(0xFF2E3192),
+                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
                         onSelected: (selected) {
                           if (selected) setState(() => _selectedCategoryName = category.name);
                         },
@@ -200,7 +205,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 }
 
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 16,
@@ -209,11 +214,47 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   ),
                   itemCount: filteredProducts.length,
                   itemBuilder: (context, index) {
-                    return ProductCard(product: filteredProducts[index]);
+                    return TweenAnimationBuilder<double>(
+                      key: ValueKey(filteredProducts[index].id),
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 300 + (index.clamp(0, 10) * 100)),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - value)),
+                          child: Opacity(
+                            opacity: value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: ProductCard(product: filteredProducts[index], heroTagPrefix: 'catalog_'),
+                    );
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Shimmer.fromColors(
+                baseColor: Colors.grey.shade300,
+                highlightColor: Colors.grey.shade100,
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.70,
+                  ),
+                  itemCount: 6,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    );
+                  },
+                ),
+              ),
               error: (e, st) => Center(child: Text('Error: $e')),
             ),
           ),

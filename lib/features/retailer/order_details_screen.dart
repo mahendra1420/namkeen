@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../shared/models/order_model.dart';
 import '../../shared/providers/order_provider.dart';
+import '../../shared/utils/invoice_generator.dart';
 
 class OrderDetailsScreen extends ConsumerWidget {
   final OrderModel order;
@@ -87,6 +90,13 @@ class OrderDetailsScreen extends ConsumerWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: item.product.imageUrl != null && item.product.imageUrl!.isNotEmpty
+                              ? Image.network(item.product.imageUrl!, width: 48, height: 48, fit: BoxFit.cover)
+                              : Container(width: 48, height: 48, color: Colors.grey.shade200, child: const Icon(Icons.image, color: Colors.grey, size: 20)),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,6 +130,53 @@ class OrderDetailsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                    label: const Text('Share Invoice'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      try {
+                        final bytes = await InvoiceGenerator.generateInvoice(order);
+                        await Printing.sharePdf(bytes: bytes, filename: 'invoice_${order.id}.pdf');
+                      } catch (e) {
+                        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.chat),
+                    label: const Text('WhatsApp Admin'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366), // WhatsApp Green
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      // Hardcoding admin number for now or we could pull from a config
+                      final adminPhone = '919999999999'; 
+                      final text = Uri.encodeComponent('Hello Admin, I have a query regarding Order #${order.id}.');
+                      final url = Uri.parse('https://wa.me/$adminPhone?text=$text');
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      } else {
+                        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not launch WhatsApp')));
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             if (order.status == OrderStatus.pending)
@@ -174,6 +231,7 @@ class OrderDetailsScreen extends ConsumerWidget {
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending: return Colors.orange;
+      case OrderStatus.partially_fulfilled: return Colors.blue;
       case OrderStatus.completed: return Colors.green;
       default: return Colors.grey;
     }
@@ -182,6 +240,7 @@ class OrderDetailsScreen extends ConsumerWidget {
   IconData _getStatusIcon(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending: return Icons.schedule;
+      case OrderStatus.partially_fulfilled: return Icons.inventory_2;
       case OrderStatus.completed: return Icons.check_circle;
       default: return Icons.info;
     }

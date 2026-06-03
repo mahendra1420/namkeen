@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../shared/services/cloudinary_service.dart';
 import '../../shared/providers/banner_provider.dart';
 import '../../shared/models/banner_model.dart';
 
@@ -112,13 +113,12 @@ class _AddBannerDialogState extends ConsumerState<_AddBannerDialog> {
     setState(() => _isLoading = true);
     
     try {
-      final bytes = await _imageFile!.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      final imageUrl = await CloudinaryService.uploadImage(_imageFile!);
       
       final banner = BannerModel(
         id: '', 
         title: _titleController.text.trim(), 
-        imageUrl: base64Image,
+        imageUrl: imageUrl,
       );
       
       await ref.read(bannerServiceProvider).addBanner(banner);

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import '../../shared/providers/cart_provider.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/order_provider.dart';
 import '../../shared/models/order_model.dart';
+import 'retailer_main_layout.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -24,6 +27,20 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     if (cartItems.isEmpty) return;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please log in to checkout')));
+      return;
+    }
+
+    if (user.creditBalance + totalAmount > user.creditLimit) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Credit Limit Exceeded'),
+          content: Text('Your current outstanding balance (₹${user.creditBalance}) plus this order (₹$totalAmount) exceeds your assigned credit limit of ₹${user.creditLimit}.\n\nPlease contact the administrator to settle your dues.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+          ],
+        ),
+      );
       return;
     }
 
@@ -76,7 +93,28 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         title: const Text('Your Cart'),
       ),
       body: cartItems.isEmpty
-          ? const Center(child: Text('Your cart is empty.'))
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Lottie.network(
+                    'https://assets10.lottiefiles.com/packages/lf20_3VDN1k.json',
+                    width: 200,
+                    height: 200,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.shopping_cart_outlined, size: 100, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Your cart is empty.', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.read(retailerNavIndexProvider.notifier).state = 1;
+                    },
+                    child: const Text('Start Shopping'),
+                  )
+                ],
+              ),
+            )
           : Column(
               children: [
                 Expanded(
@@ -91,14 +129,34 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: item.product.imageUrl != null && item.product.imageUrl!.isNotEmpty
+                                    ? Image.network(item.product.imageUrl!, width: 60, height: 60, fit: BoxFit.cover)
+                                    : Container(width: 60, height: 60, color: Colors.grey.shade200, child: const Icon(Icons.image, color: Colors.grey)),
+                              ),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                     const SizedBox(height: 4),
-                                    Text('₹${item.product.price} / ${item.product.unit}', style: TextStyle(color: Colors.grey.shade600)),
+                                    Row(
+                                      children: [
+                                        Text('₹${item.product.price} / ${item.product.unit}', style: TextStyle(color: Colors.grey.shade600, decoration: (item.product.discountThreshold != null && item.quantity >= item.product.discountThreshold!) ? TextDecoration.lineThrough : null)),
+                                        if (item.product.discountThreshold != null && item.quantity >= item.product.discountThreshold!) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(4)),
+                                            child: Text('₹${item.product.discountedPrice} applied!', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                     const SizedBox(height: 12),
                                     Container(
                                       decoration: BoxDecoration(
@@ -150,9 +208,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
                   child: SafeArea(
+                    bottom: false,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [

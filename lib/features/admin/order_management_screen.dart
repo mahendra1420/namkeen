@@ -64,14 +64,22 @@ class OrderManagementScreen extends ConsumerWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: _getStatusColor(order.status).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              color: _getStatusColor(order.status).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: _getStatusColor(order.status).withValues(alpha: 0.5)),
                             ),
-                            child: Text(
-                              order.status.name.toUpperCase(),
-                              style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold, fontSize: 12),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(_getStatusIcon(order.status), size: 14, color: _getStatusColor(order.status)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  order.status.name.replaceAll('_', ' ').toUpperCase(),
+                                  style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -92,32 +100,54 @@ class OrderManagementScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      if (order.status == OrderStatus.pending)
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      if (order.status == OrderStatus.pending || order.status == OrderStatus.partially_fulfilled)
+                        Row(
+                          children: [
+                            if (order.status == OrderStatus.pending)
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  icon: const Icon(Icons.inventory_2, size: 18),
+                                  label: const Text('Partial Fill'),
+                                  onPressed: () async {
+                                    try {
+                                      await ref.read(orderServiceProvider).updateOrderStatus(order.id, OrderStatus.partially_fulfilled);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order marked as partially fulfilled!'), backgroundColor: Colors.blue));
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                    }
+                                  },
+                                ),
+                              ),
+                            if (order.status == OrderStatus.pending) const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.check_circle, size: 18),
+                                label: const Text('Complete'),
+                                onPressed: () async {
+                                  try {
+                                    await ref.read(orderServiceProvider).updateOrderStatus(order.id, OrderStatus.completed);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order marked as completed!'), backgroundColor: Colors.green));
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                  }
+                                },
+                              ),
                             ),
-                            icon: const Icon(Icons.check_circle, size: 18),
-                            label: const Text('Mark as Completed'),
-                            onPressed: () async {
-                              try {
-                                await ref.read(orderServiceProvider).updateOrderStatus(order.id, OrderStatus.completed);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Order marked as completed!'), backgroundColor: Colors.green),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                                }
-                              }
-                            },
-                          ),
+                          ],
                         ),
                     ],
                   ),
@@ -135,8 +165,18 @@ class OrderManagementScreen extends ConsumerWidget {
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending: return Colors.orange;
+      case OrderStatus.partially_fulfilled: return Colors.blue;
       case OrderStatus.completed: return Colors.green;
       default: return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending: return Icons.schedule;
+      case OrderStatus.partially_fulfilled: return Icons.inventory_2_outlined;
+      case OrderStatus.completed: return Icons.check_circle_outline;
+      default: return Icons.help_outline;
     }
   }
 }

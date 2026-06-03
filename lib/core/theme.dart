@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF1E3A8A); // Deep Blue
-  static const Color secondaryColor = Color(0xFFF59E0B); // Amber
-  static const Color backgroundColor = Color(0xFFF3F4F6); // Light Gray
+  static const Color primaryColor = Color(0xFF6200EA); // Deep Purple
+  static const Color secondaryColor = Color(0xFF9C27B0); // Violet
+  static const Color backgroundColor = Color(0xFFF8F9FA); // Ultra Light Gray
   static const Color surfaceColor = Colors.white;
-  static const Color textPrimaryColor = Color(0xFF111827);
+  static const Color textPrimaryColor = Color(0xFF111111);
   static const Color textSecondaryColor = Color(0xFF6B7280);
   static const Color errorColor = Color(0xFFEF4444);
   static const Color successColor = Color(0xFF10B981);
@@ -34,8 +34,9 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(100), // Pill shaped buttons
           ),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -44,9 +45,9 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
+          side: const BorderSide(color: primaryColor, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(100), // Pill shaped buttons
           ),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

@@ -14,6 +14,7 @@ class UserModel {
   final bool isApproved;
   final bool isBlocked;
   final double creditBalance;
+  final double creditLimit;
 
   UserModel({
     required this.id,
@@ -29,6 +30,7 @@ class UserModel {
     this.isApproved = false,
     this.isBlocked = false,
     this.creditBalance = 0.0,
+    this.creditLimit = 100000.0,
   });
 
   // JSON Serialization
@@ -47,6 +49,7 @@ class UserModel {
       isApproved: json['isApproved'] as bool? ?? false,
       isBlocked: json['isBlocked'] as bool? ?? false,
       creditBalance: (json['creditBalance'] as num?)?.toDouble() ?? 0.0,
+      creditLimit: (json['creditLimit'] as num?)?.toDouble() ?? 100000.0,
     );
   }
 
@@ -65,6 +68,7 @@ class UserModel {
       'isApproved': isApproved,
       'isBlocked': isBlocked,
       'creditBalance': creditBalance,
+      'creditLimit': creditLimit,
     };
   }
 }

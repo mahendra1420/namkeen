@@ -11,29 +11,71 @@ import '../../shared/providers/retailer_dashboard_provider.dart';
 
 import '../../shared/widgets/product_card.dart';
 
-class RetailerHomeScreen extends ConsumerWidget {
+class RetailerHomeScreen extends ConsumerStatefulWidget {
   const RetailerHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RetailerHomeScreen> createState() => _RetailerHomeScreenState();
+}
+
+class _RetailerHomeScreenState extends ConsumerState<RetailerHomeScreen> {
+  int _currentBannerIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final products = ref.watch(productProvider);
     final user = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(user?.shopName ?? 'Retailer'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ref.read(authProvider.notifier).logout();
-              context.go('/login');
-            },
-          )
-        ],
-      ),
       body: CustomScrollView(
         slivers: [
+          // Custom Header
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 60, 16, 24),
+              decoration: const BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6200EA), Color(0xFF9C27B0)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        child: const Icon(Icons.person, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Good Morning,', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                          Text(user?.name ?? 'Retailer', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+          
           SliverToBoxAdapter(
             child: _buildBannerCarousel(ref),
           ),
@@ -43,7 +85,7 @@ class RetailerHomeScreen extends ConsumerWidget {
             child: ref.watch(recentlyOrderedProvider).when(
               data: (recentProducts) {
                 if (recentProducts.isEmpty) return const SizedBox.shrink();
-                return _buildHorizontalSection('Buy Again', recentProducts, ref);
+                return _buildHorizontalSection('Buy Again', recentProducts, ref, 'buy_again_');
               },
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
@@ -55,7 +97,7 @@ class RetailerHomeScreen extends ConsumerWidget {
             child: ref.watch(bestSellingProductsProvider).when(
               data: (bestSellers) {
                 if (bestSellers.isEmpty) return const SizedBox.shrink();
-                return _buildHorizontalSection('Best Sellers', bestSellers, ref);
+                return _buildHorizontalSection('Best Sellers', bestSellers, ref, 'best_sellers_');
               },
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
@@ -68,7 +110,7 @@ class RetailerHomeScreen extends ConsumerWidget {
               if (productList.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
               final newArrivals = productList.reversed.take(5).toList();
               return SliverToBoxAdapter(
-                child: _buildHorizontalSection('New Arrivals', newArrivals, ref),
+                child: _buildHorizontalSection('New Arrivals', newArrivals, ref, 'new_arrivals_'),
               );
             },
             loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
@@ -76,10 +118,20 @@ class RetailerHomeScreen extends ConsumerWidget {
           ),
 
           // All Products Header
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-              child: Text('All Products', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: const Color(0xFF2E3192).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.grid_view, color: Color(0xFF2E3192), size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('All Products', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
 
@@ -106,7 +158,7 @@ class RetailerHomeScreen extends ConsumerWidget {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final product = productList[index];
-                      return ProductCard(product: product);
+                      return ProductCard(product: product, heroTagPrefix: 'featured_');
                     },
                     childCount: productList.length,
                   ),
@@ -116,19 +168,39 @@ class RetailerHomeScreen extends ConsumerWidget {
             loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
             error: (error, stack) => SliverFillRemaining(child: Center(child: Text('Error: $error'))),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)), // Bottom padding
+          const SliverToBoxAdapter(child: SizedBox(height: 100)), // Bottom padding for floating nav bar
         ],
       ),
     );
   }
 
-  Widget _buildHorizontalSection(String title, List<ProductModel> productsList, WidgetRef ref) {
+  Widget _buildHorizontalSection(String title, List<ProductModel> productsList, WidgetRef ref, String prefix) {
+    IconData sectionIcon = Icons.star;
+    if (title.contains('Buy Again')) sectionIcon = Icons.history;
+    if (title.contains('New')) sectionIcon = Icons.new_releases;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-          child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: const Color(0xFF2E3192).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                    child: Icon(sectionIcon, color: const Color(0xFF2E3192), size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              Text('See All', style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600, fontSize: 13)),
+            ],
+          ),
         ),
         SizedBox(
           height: 260,
@@ -141,7 +213,7 @@ class RetailerHomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: SizedBox(
                   width: 160,
-                  child: ProductCard(product: productsList[index]),
+                  child: ProductCard(product: productsList[index], heroTagPrefix: prefix),
                 ),
               );
             },
@@ -159,37 +231,62 @@ class RetailerHomeScreen extends ConsumerWidget {
         final activeBanners = banners.where((b) => b.isActive).toList();
         if (activeBanners.isEmpty) return const SizedBox.shrink();
         
-        return Container(
-          height: 180,
-          margin: const EdgeInsets.only(top: 16),
-          child: PageView.builder(
-            itemCount: activeBanners.length,
-            itemBuilder: (context, index) {
-              final banner = activeBanners[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: banner.imageUrl.startsWith('http')
-                      ? Image.network(banner.imageUrl, fit: BoxFit.cover)
-                      : Image.memory(
-                          base64Decode(banner.imageUrl), 
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.grey.shade300,
-                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                          ),
-                        ),
-                ),
-              );
-            },
-          ),
+        return Column(
+          children: [
+            Container(
+              height: 180,
+              margin: const EdgeInsets.only(top: 16),
+              child: PageView.builder(
+                itemCount: activeBanners.length,
+                onPageChanged: (index) {
+                  setState(() => _currentBannerIndex = index);
+                },
+                itemBuilder: (context, index) {
+                  final banner = activeBanners[index];
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: _currentBannerIndex == index ? 0 : 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        if (_currentBannerIndex == index)
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 6)),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: banner.imageUrl.startsWith('http')
+                          ? Image.network(banner.imageUrl, fit: BoxFit.cover)
+                          : Image.memory(
+                              base64Decode(banner.imageUrl), 
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: Colors.grey.shade300,
+                                child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                              ),
+                            ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(activeBanners.length, (index) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _currentBannerIndex == index ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _currentBannerIndex == index ? const Color(0xFF2E3192) : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              }),
+            ),
+          ],
         );
       },
       loading: () => const SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),

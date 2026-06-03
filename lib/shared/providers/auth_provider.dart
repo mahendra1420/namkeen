@@ -87,6 +87,21 @@ class AuthNotifier extends Notifier<UserModel?> {
     return false;
   }
 
+  Future<bool> updateProfile(UserModel updatedUser) async {
+    try {
+      if (updatedUser.id.startsWith('ret_')) {
+        // Mock user update
+        state = updatedUser;
+        return true;
+      }
+      await FirebaseFirestore.instance.collection('users').doc(updatedUser.id).update(updatedUser.toJson());
+      state = updatedUser;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   void logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userRole');

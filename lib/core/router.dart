@@ -15,6 +15,7 @@ import '../features/retailer/retailer_main_layout.dart';
 import '../features/retailer/cart_screen.dart';
 import '../features/retailer/product_details_screen.dart';
 import '../features/retailer/order_details_screen.dart';
+import '../features/retailer/edit_profile_screen.dart';
 import '../shared/models/product_model.dart';
 import '../shared/models/order_model.dart';
 import '../shared/models/user_model.dart';
@@ -87,6 +88,12 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/product-details',
       builder: (context, state) {
+        if (state.extra is Map<String, dynamic>) {
+          final map = state.extra as Map<String, dynamic>;
+          final product = map['product'] as ProductModel;
+          final heroTagPrefix = map['heroTagPrefix'] as String? ?? '';
+          return ProductDetailsScreen(product: product, heroTagPrefix: heroTagPrefix);
+        }
         final product = state.extra as ProductModel;
         return ProductDetailsScreen(product: product);
       },
@@ -97,6 +104,10 @@ final goRouter = GoRouter(
         final order = state.extra as OrderModel;
         return OrderDetailsScreen(order: order);
       },
+    ),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (context, state) => const EditProfileScreen(),
     ),
   ],
 );
